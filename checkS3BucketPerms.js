@@ -19,6 +19,18 @@ function checkPublicBuckets(bucketJson){
       else {
         //Check bucket permissions for Authenticated Users and Everyone
         console.log(params.Bucket + ' --- ' + checkGrants(bucketAclJson));
+        s3.getBucketPolicy(params, function(err, bucketPolicyJson) {
+          if (err) {
+            if (err.code !== "NoSuchBucketPolicy") {
+              console.log(err, err.stack);
+            }
+          }
+          else {
+            if (bucketPolicyJson !== null) {
+              console.log(params.Bucket + ' --- Policy --- ' + checkPolicy(bucketPolicyJson)); 
+            }
+          }
+        });
         //Get bucket objects
        var bucketObjectsJson = retrieveBucketObjects(params.Bucket, null);
       }
@@ -62,7 +74,24 @@ function checkBucketObjects(bucketObjectsJson){
     })();
   }
 }
- 
+
+function checkPolicy(policyJson){
+  var worstPolicyPermissions = 'Private';
+
+  var policy = JSON.parse(policyJson.Policy);
+
+  for (let statement of policy['Statement']) {
+    if (statement['Principal'] == '*' && statement['Effect'] == 'Deny' && statement['Action'] == '*') {
+      return 'Private';
+    }
+    if (statement['Principal'] == '*' && statement['Effect'] == 'Allow') {
+      worstPolicyPermissions = 'Everyone --- ' + statement['Action'] + ' --- ' + statement['Resource'];
+    }
+  }
+  console.log(worstPolicyPermissions);
+  return worstPolicyPermissions;
+}
+
 function checkGrants(grantsJson){
   var worstGrantType = 'Private';
  
