@@ -32,7 +32,7 @@ function checkPublicBuckets(bucketJson){
           }
         });
         //Get bucket objects
-       var bucketObjectsJson = retrieveBucketObjects(params.Bucket, null);
+        var bucketObjectsJson = retrieveBucketObjects(params.Bucket, null);
       }
     });
   }
@@ -65,7 +65,11 @@ function checkBucketObjects(bucketObjectsJson){
         Key: s3Obj['Key']
       };
       s3.getObjectAcl(params, function(err, objectAclJson) {
-        if (err) console.log(err, err.stack); // an error occurred
+        if (err) {
+          console.log('s3://' + params.Bucket + '/' + s3Obj['Key'] + ' --- ERROR RETRIEVING PERMISSIONS');
+          console.log(err, err.stack); // an error occurred
+ 
+        }
         else {
           //Check bucket permissions for Authenticated Users and Everyone
           console.log('s3://' + params.Bucket + '/' + s3Obj['Key'] + ' --- ' + checkGrants(objectAclJson));
@@ -97,10 +101,10 @@ function checkGrants(grantsJson){
  
   for (let grant of grantsJson['Grants']) {
     if (grant['Grantee']['Type'] == 'Group') {
-      if (grant['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AllUsers') {
+      if (grant['Grantee']['URI'].search('AllUsers') >= 0) {
         worstGrantType = 'Everyone';
       } else {
-        if (grant['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AuthenticatedUsers') {
+        if (grant['Grantee']['URI'].search('AuthenticatedUsers') >= 0) {
           if (worstGrantType == 'Private') {
             worstGrantType = 'Authenticated Users';
           }
